@@ -1,0 +1,61 @@
+.playerInfo {
+    height: 80%;
+}
+
+.block {
+    height: 25%;
+    width: 100%;
+    display: flex;
+	justify-content: center;
+}
+
+.slide {
+    display: block;
+}
+
+.numpad {
+    height: 50%;
+}
+
+.numberButton {
+    margin: 0px;
+    display: block;
+    width: 100%;
+    padding: 0px;
+    height: 100%;
+    font-size: 150%;
+    text-align: center;
+}
+
+#thrownpoints {
+    text-align: center;
+    font-size: 30px;
+    padding: 5px;
+    background-color: rgb(165, 165, 165);
+    height: 20%;
+}
+.points {
+    font-size: 4.5em;
+    margin: 0;
+}
+
+#finishway {
+    font-size: 25px;
+    background-color: #10dc60;
+}
+
+.marg {
+    margin-bottom: 2%;
+}
+
+.vertikal {
+    display: table-cell;
+    vertical-align: middle;
+}
+
+#tablediv {
+    display: table;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+}

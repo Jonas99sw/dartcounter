@@ -1,0 +1,30 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons left>
+      <ion-button (click)="closePage()">
+        <ion-icon class="customIcon" name="arrow-back"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Einstellungen</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-list id="list">
+    <ion-list-header>Spieler</ion-list-header>
+    <ion-item *ngFor="let player of players">
+      <ion-input required="true" type="text" value={{player.name}}></ion-input>
+      <div class="buttons" item-right>
+        <ion-button color="danger" (click)="remove(player)">
+          <ion-icon name="trash"></ion-icon>
+        </ion-button>
+      </div>
+    </ion-item>
+  </ion-list>
+
+  <br>
+  <br>
+
+  <ion-input #input placeholder="Name des Spielers" required="true" type="text" [(ngModel)]="playername"></ion-input>
+  <ion-button (click)="safe()" color="success">Spieler hinzufügen</ion-button>
+</ion-content>

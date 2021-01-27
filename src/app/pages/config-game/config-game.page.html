@@ -1,0 +1,92 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons left>
+      <ion-button (click)="closePage()">
+        <ion-icon class="customIcon" name="arrow-back"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Spiel Einstellungen</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content padding>
+  <ion-list>
+    <ion-list-header class="headers">
+      Punkte
+    </ion-list-header>
+    <ion-item>
+      <ion-range id="pointscount" min="201" max="701" step="100" pin="true" snaps="true" [(ngModel)]="pointscount">
+        <ion-label range-left class="small-text">P</ion-label>
+        <ion-label range-right>P</ion-label>
+      </ion-range>
+    </ion-item>
+  </ion-list>
+
+  <ion-grid>
+    <ion-row>
+      <ion-col>
+        <ion-list>
+          <ion-list-header class="headers">
+            Legs
+          </ion-list-header>
+          <ion-item>
+            <ion-button shape="round" color="danger" (click)="remove('leg')">
+              <ion-icon name="remove"></ion-icon>
+            </ion-button>
+            <div class="inputs">{{legs}}</div>
+            <ion-button shape="round" color="success" (click)="add('leg')">
+              <ion-icon name="add"></ion-icon>
+            </ion-button>
+          </ion-item>
+        </ion-list>
+      </ion-col>
+      <ion-col>
+        <ion-list>
+          <ion-list-header class="headers">
+            Sets
+          </ion-list-header>
+          <ion-item>
+            <ion-button shape="round" color="danger" (click)="remove('set')">
+              <ion-icon name="remove"></ion-icon>
+            </ion-button>
+            <div class="inputs">{{sets}}</div>
+            <ion-button shape="round" color="success" (click)="add('set')">
+              <ion-icon name="add"></ion-icon>
+            </ion-button>
+          </ion-item>
+        </ion-list>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
+  <ion-list>
+    <ion-list-header class="headers">
+      Spieler
+    </ion-list-header>
+    <ion-item-sliding *ngFor="let player of players">
+      <ion-item>
+        <ion-select id="select" [(ngModel)]="player.name" interface="popover">
+          <ion-select-option id="option" *ngFor="let name of names" value="{{name.name}}">{{name.name}}</ion-select-option>
+        </ion-select>
+      </ion-item>
+      <ion-item-options side="start">
+        <ion-item-option color="danger" (click)="removePlayer(player)">
+          <ion-icon name="trash"></ion-icon>
+        </ion-item-option>
+      </ion-item-options>
+      <ion-item-options side="end">
+        <ion-item-option color="danger" (click)="removePlayer(player)">
+          <ion-icon name="trash"></ion-icon>
+        </ion-item-option>
+      </ion-item-options>
+    </ion-item-sliding>
+  </ion-list>
+  <ion-fab vertical="bottom" horizontal="center" slot="fixed">
+    <ion-fab-button (click)="addPlayer()" color="warning">
+      <ion-icon name="add"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+</ion-content>
+
+<ion-footer>
+  <ion-button (click)="startGame()" expand="full" size="large" class="nomargin" color="success">Game Starten</ion-button>
+</ion-footer>

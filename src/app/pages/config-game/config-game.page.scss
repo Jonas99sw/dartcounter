@@ -1,0 +1,34 @@
+.inputs {
+    width: 15%;
+    text-align: center;
+    font-size: 30px;
+}
+
+.block {
+    display: flex;
+	justify-content: center;
+}
+
+.center {
+    text-align: center
+}
+
+.textcenter {
+    text-align: center;
+    font-size: 30px;
+}
+
+.headers {
+    font-size: 1.6rem;
+    color: black;
+}
+
+.nomargin {
+    margin: 0;
+}
+
+.playerButton {
+    border-radius: 50px !important;
+    width: 65px !important;
+    height: 65px !important;
+}

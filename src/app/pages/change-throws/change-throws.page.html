@@ -1,0 +1,20 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons left>
+      <ion-button (click)="closepage()">
+        <ion-icon class="customIcon" name="arrow-back"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Würfe ändern</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-list id="list">
+    <ion-list-header>Geworfene Punkte</ion-list-header>
+    <ion-item *ngFor="let throw of throwsShow">
+      <ion-input placeholder="Punktzahl" (ionChange)="change(throw)" required="true" type="number" max="180" min="0"
+        value={{throw.points}}></ion-input>
+    </ion-item>
+  </ion-list>
+</ion-content>
