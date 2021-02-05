@@ -1,7 +1,8 @@
 import { Component } from '@angular/core';
 import { NavController } from '@ionic/angular';
 import { Router } from '@angular/router';
-import { Storage } from '@ionic/storage';
+import { Settings } from '../../providers/Settings';
+import { Stats } from '../../providers/Stats';
 
 @Component({
   selector: 'app-config-game',
@@ -14,19 +15,30 @@ export class ConfigGamePage {
   legs: number;
   volume: string;
   players: Array<{ name: string }>;
-  names: Array<{ id: number, name: string }>;
+  names: Array<any>;
 
-  constructor(public navCtrl: NavController, public router: Router, public storage: Storage) {
+  constructor(public navCtrl: NavController, public router: Router, public settings: Settings, public stats: Stats) {
     this.sets = 1;
     this.pointscount = 501
     this.legs = 2;
-    storage.get('names').then((val) => {
-      if (val !== undefined && val.length > 0) {
-        this.names = val;
+    this.names = [];
+  }
+
+  ionViewDidEnter() {
+    var me = this;
+    this.settings.getPlayers().then((result) => {
+      if (result.length === 0) {
+        me.names.push({ Name: "Spieler 1" });
+        me.names.push({ Name: "Spieler 2" });
       } else {
-        this.names = [{ id: 1, name: "Spieler-1" }, { id: 2, name: "Spieler 2" }];
+        for (var i=0; i < result.length; i++) {
+          me.names.push(result[i]);
+        }
       }
-      this.players = [{ name: this.names[0].name }, { name: this.names[1].name }];
+      if (result.length === 1) {
+        me.names.push({ Name: "Spieler 2" });
+      }
+      me.players = [{ name: me.names[0].Name }, { name: me.names[1].Name }];
     });
   }
 
@@ -39,22 +51,13 @@ export class ConfigGamePage {
   }
 
   addPlayer() {
-    /*$scope.data = {};
- 
-    $scope.submit = function(){
-        var link = 'http://nikola-breznjak.com/_testings/ionicPHP/api.php';
- 
-        $http.post(link, {username : $scope.data.username}).then(function (res){
-            $scope.response = res.data;
-        });
-    };*/
-    /*var name: string;
-    if (this.names[this.players.length]) {
-      name = this.names[this.players.length].name;
+    var name: string;
+    if (this.settings.players[this.players.length]) {
+      name = this.settings.players[this.players.length].Name;
     } else {
-      name = this.names[0].name
+      name = this.settings.players[0].Name
     }
-    this.players.push({ name: name });*/
+    this.players.push({ name: name });
   }
 
   startGame() {
@@ -62,18 +65,22 @@ export class ConfigGamePage {
     for (var i = 0; i < this.players.length; i++) {
       names.push(this.players[i].name);
     }
-    var settings = {
-      Players: names,
-      Sets: this.sets,
-      Legs: this.legs,
-      Points: this.pointscount
-    };
-
-    if (names.length == 0) {
-
-    } else {
-      this.router.navigate(['/game', settings]);
+    if (names.length === 0) {
+      return;
     }
+    this.stats.addGame(this.pointscount, this.legs, this.sets).then((game) => {
+      var params = {
+        gameId: game.Id
+      }
+      game.setPlayers(names);
+      this.router.navigate(['/game', params]);
+    });
+  }
+
+  public onItemReorder({ detail }) {
+    const itemMove = this.players.splice(detail.from, 1)[0];
+    this.players.splice(detail.to, 0, itemMove);
+    detail.complete(true);
   }
 
   remove(id) {

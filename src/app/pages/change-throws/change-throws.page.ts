@@ -17,17 +17,16 @@ export class ChangeThrowsPage {
   that: any;
 
   constructor(public navParams: NavParams, public modalController: ModalController, public toastController: ToastController) {
-    var throws = navParams.data.player.dartsThrown;
     var leg = navParams.data.leg;
+    var set = navParams.data.set;
+    var thrownDarts = navParams.data.player.Sets[set].Legs[leg].Points
     this.that = navParams.data.that;
     this.throws = [];
     this.throwsShow = [];
-    for (var i=0; i < throws.length; i++) {
-      this.throws.push({id: i, points: throws[i].points});
-      if (throws[i].leg === leg) {
-        this.totalpoints += throws[i].points;
-        this.throwsShow.push({id: i, points: throws[i].points, viewid: this.throwsShow.length});
-      }
+    for (var i=0; i < thrownDarts.length; i++) {
+      this.throws.push({id: i, points: thrownDarts[i]});
+        this.totalpoints += thrownDarts[i];
+        this.throwsShow.push({id: i, points: thrownDarts[i], viewid: this.throwsShow.length});
     }
   }
 
@@ -56,6 +55,10 @@ export class ChangeThrowsPage {
 
   closepage() {
     var thrownpoints = this.totalpoints + this.newtotalpoint;
+    if (thrownpoints > 501 || thrownpoints <= 1){
+      this.presentToast("Nicht möglich");
+      return;
+    }
     var data = {
       points: thrownpoints,
       me: this.that,

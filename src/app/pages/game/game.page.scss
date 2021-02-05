@@ -10,7 +10,14 @@
 }
 
 .slide {
+    width: 100%;
+    max-width: 960px;
     display: block;
+}
+
+.activPlayer {
+    background-color: blue;
+    opacity: 45;
 }
 
 .numpad {

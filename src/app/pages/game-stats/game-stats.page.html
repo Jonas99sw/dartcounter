@@ -1,0 +1,17 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Statistiken zum Spiel</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-title>{{title}}</ion-title>
+  <ion-grid>
+    <ion-row *ngFor="let row of rows">
+      <ion-col *ngFor="let column of row.Columns">
+        <div [style.background-color]="getColor(row, column)">{{column.text}}</div>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
+  <ion-button size="large" expand="block" (click)="routeToStart()">Start</ion-button>
+</ion-content>

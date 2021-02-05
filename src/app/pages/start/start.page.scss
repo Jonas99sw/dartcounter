@@ -15,9 +15,13 @@
     font-family: Georgia, 'Times New Roman', Times, serif
 }
 
+pictureFrame {
+    width: 100%;
+}
 
 img {
     width: 80%;
+    max-width: 500px;
     height: auto;
     margin-bottom: 5%;
     margin-top: 5%;

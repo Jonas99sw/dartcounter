@@ -1,9 +1,11 @@
 import { Component, ViewChild } from '@angular/core';
-import { NavController, ToastController, ModalController, AlertController, IonSlides } from '@ionic/angular';
+import { NavController, ActionSheetController, ToastController, ModalController, AlertController, IonSlides } from '@ionic/angular';
 import { Router, ActivatedRoute } from '@angular/router';
+import { Settings } from '../../providers/Settings';
 //import { PowerManagement } from '@ionic-native/power-management/ngx';
 import { ChangeThrowsPage } from '../change-throws/change-throws.page';
-import { modelGroupProvider } from '@angular/forms/src/directives/ng_model_group';
+import { Game } from '../../providers/Game';
+import { Stats } from '../../providers/Stats';
 
 @Component({
   selector: 'app-game',
@@ -17,33 +19,76 @@ export class GamePage {
     avarageLeg: number, avarageSet: number, finishWay: String, finishTable: Array<any>,
     dartsThrown: Array<{ leg: number, set: number, points: number }>
   }>;
-  acctualPlayer: number;
-  acctualLeg: number;
-  legsToWin: number;
-  acctualSet: number;
-  setsToWin: number;
-  points: number;
+  private game: Game;
+  desktop: boolean;
+  finishDialogOpen: boolean;
   wayToStart: boolean;
   thrownpoints: any;
+  finishDialog: any;
   output = [];
   soFar = [];
-  priorityArray = ["D20", "D16", "D18", "D10", "D8", "BULL", "D12", "D4", "D2", "D1", "D9", "D7"];
-
   constructor(public navCtrl: NavController, public alertCtrl: AlertController, public router: Router,
-    public toastController: ToastController, public modalCtrl: ModalController, private route: ActivatedRoute) {
+    public toastController: ToastController, public modalCtrl: ModalController, private route: ActivatedRoute,
+    public actionSheetController: ActionSheetController, private settings: Settings, private stats: Stats) {
     this.thrownpoints = "";
-    this.acctualSet = 0;
-    this.acctualLeg = 0;
-    this.acctualPlayer = 0;
     this.wayToStart = false;
-    this.players = [];
     this.route.params.subscribe(params => {
-      this.legsToWin = JSON.parse(params.Legs);
-      this.setsToWin = JSON.parse(params.Sets);
-      this.points = JSON.parse(params.Points);
-      this.addPlayer(params.Players.split(","));
-      this.startGame();
+      var gameId = JSON.parse(params.gameId);
+      this.finishDialogOpen = false;
+      this.game = this.stats.getGame(gameId);
+      if (!this.game) {
+        this.stats.getGameFromStorage(gameId).then((game) => {
+          this.game = game;
+        })
+      }
+      settings.getPlayers();
+      for (var i = 0; i < this.game.players.length; i++) {
+        this.calculateFinishWay(i, this.game.players[i].getPoints());
+      }
+      var isTouchDevice = function () { return 'ontouchstart' in window || 'onmsgesturechange' in window; };
+      this.desktop = window.screenX != 0 && !isTouchDevice() ? true : false;
+      this.addKeyListenerEvent();
+      this.setDisplayActivity();
+
     });
+  }
+  setDisplayActivity() {
+    if (this.desktop === false) {
+      (window as any).powerManagement.acquire(function () {
+        console.log('Wakelock acquired');
+      }, function () {
+        console.log('Failed to acquire wakelock');
+      });
+    }
+  }
+  getColor(playerName) {
+    if (this.game.getAcctualPlayer().getName() === playerName) {
+      return "#a4dea0";
+    }
+    return "#ffffff";
+  }
+  addKeyListenerEvent() {
+    if (this.desktop === true) {
+      document.addEventListener('keydown', function (e) {
+        var number = parseInt((e as any).key);
+        var kfzregex = new RegExp("[0-9]{1,3}");
+        if (kfzregex.test(String(number))) {
+          if (this.finishDialogOpen === true) {
+            this.finishDialogOpen = false;
+            var points = this.game.getAcctualPlayer().getPoints();
+            this.legWon(points, number);
+            this.finishDialog.dismiss();
+            return;
+          }
+          this.number(number);
+        }
+        if (e.key === "Enter") {
+          this.enter();
+        } else if (e.key === "Backspace") {
+          this.delete();
+        }
+      }.bind(this));
+    }
   }
 
   number(pressed) {
@@ -59,15 +104,15 @@ export class GamePage {
     var wayWithSameEnd = 2;
     var finishDart;
     var sameFinish = 1;
-    if (this.players[this.acctualPlayer].finishTable[0]) {
+    if (this.game.getAcctualPlayer().finishTable[0]) {
       var subTitle = "";
       for (var i = 0; addedEntrys < waystoShow; i++) {
-        if (this.players[this.acctualPlayer].finishTable.length == i) {
+        if (this.game.getAcctualPlayer().finishTable.length == i) {
           break;
         }
-        var dartslength = this.players[this.acctualPlayer].finishTable[i].Darts.length
-        var way = this.players[this.acctualPlayer].finishTable[i].Darts.toString();
-        if (finishDart === this.players[this.acctualPlayer].finishTable[i].Darts[dartslength - 1]) {
+        var dartslength = this.game.getAcctualPlayer().finishTable[i].Darts.length
+        var way = this.game.getAcctualPlayer().finishTable[i].Darts.toString();
+        if (finishDart === this.game.getAcctualPlayer().finishTable[i].Darts[dartslength - 1]) {
           if (sameFinish < wayWithSameEnd) {
             subTitle += "<h4>" + way.split(",").join(" - ") + "</h4>";
             sameFinish++;
@@ -78,7 +123,7 @@ export class GamePage {
           sameFinish = 1;
           addedEntrys++;
         }
-        finishDart = this.players[this.acctualPlayer].finishTable[i].Darts[dartslength - 1];
+        finishDart = this.game.getAcctualPlayer().finishTable[i].Darts[dartslength - 1];
       }
       this.showFinishWays(subTitle);
     }
@@ -95,8 +140,8 @@ export class GamePage {
 
   slideTap() {
     var data = {
-      player: this.players[this.acctualPlayer],
-      leg: this.acctualLeg,
+      player: this.game.getAcctualPlayer(),
+      leg: this.game.acctualLeg,
       that: this
     }
     this.showThrownDarts();
@@ -104,8 +149,9 @@ export class GamePage {
 
   async showThrownDarts() {
     var data2 = {
-      player: this.players[this.acctualPlayer],
-      leg: this.acctualLeg,
+      player: this.game.getAcctualPlayer(),
+      set: this.game.acctualSet,
+      leg: this.game.acctualLeg,
       that: this
     }
 
@@ -116,7 +162,7 @@ export class GamePage {
     await modal.present()
     const { data } = await modal.onWillDismiss();
     data.me.players[data.me.acctualPlayer].points = data.me.points - data.points;
-    for (var i=0; i < data.me.players[data.me.acctualPlayer].dartsThrown.length; i++) {
+    for (var i = 0; i < data.me.players[data.me.acctualPlayer].dartsThrown.length; i++) {
       if (data.throws[i].points !== data.me.players[data.me.acctualPlayer].dartsThrown[i].points) {
         data.me.players[data.me.acctualPlayer].dartsThrown[i].points = data.throws[i].points;
       }
@@ -137,48 +183,34 @@ export class GamePage {
     var points = JSON.parse(this.thrownpoints);
     this.score(points);
     this.thrownpoints = "";
-    this.slides.slideTo(this.acctualPlayer, 1000);
-  }
-
-  getPlayer() {
-    return this.players;
-  }
-
-  addPlayer(players) {
-    for (var i = 0; i < players.length; i++) {
-      this.players.push({
-        name: players[i],
-        points: this.points,
-        legsWon: 0,
-        setsWon: 0,
-        avarageTotal: 0,
-        avarageLeg: 0,
-        avarageSet: 0,
-        dartsThrown: [],
-        finishWay: "-  -  -",
-        finishTable: []
-      })
+    if (this.desktop === false) {
+      this.slides.slideTo(this.game.acctualPlayer, 1000);
     }
   }
+
   setWayToStart(way) {
     this.wayToStart = way; //true = bullseye; false = reihenfolge
   }
 
-  calculateFinishWay(points) {
+  calculateFinishWay(player, points) {
     this.output = [];
     this.soFar = [];
     this.getWay(points, 3)
-    this.sort(this.output, "DartsToFinish")
-    if (this.output[0]) {
+    if (this.output.length > 0) {
+      this.output = this.sort(this.output, "DartsToFinish")
+      this.sortFinishesAfterDarts(this.output);
+      var l = this.sortFinishesAfterSingles(this.output);
+      if (l) {
+        this.output.splice(l, this.output.length);
+      }
       this.priority(this.output);
-      this.players[this.acctualPlayer].finishTable = this.output;
+      this.game.players[player].finishTable = this.output;
       var way = this.output[0].Darts.toString();
-      this.players[this.acctualPlayer].finishWay = way.split(",").join(" - ");
+      this.game.players[player].finishWay = way.split(",").join(" - ");
     } else {
-      this.players[this.acctualPlayer].finishTable = [];
-      this.players[this.acctualPlayer].finishWay = "-  -  -";
+      this.game.players[player].finishTable = [];
+      this.game.players[player].finishWay = "-  -  -";
     }
-
   }
 
   check(data) {
@@ -194,7 +226,7 @@ export class GamePage {
     if (dart === 50) {
       return "BULL"
     } else if (dart === 25) {
-      return "S-Bull"
+      return "S-BULL"
     } else if (finish === true) {
       return "D" + dart / 2;
     } else if (finish === false && dart > 20 && dart % 3 == 0) {
@@ -202,7 +234,7 @@ export class GamePage {
     } else if (dart > 20 && dart % 2 == 0) {
       return "D" + dart / 2;
     } else {
-      return dart;
+      return dart.toString();
     }
   }
 
@@ -213,30 +245,88 @@ export class GamePage {
     })
   }
 
-  priority(array) {
-    var finish = array[0].DartsToFinish;
+  sortFinishesAfterDarts(array) {
+    var last;
+    var lastId;
+    try {
+      for (var i = 0; i < array.length; i++) {
+        if (last && array[i].DartsToFinish < last.DartsToFinish) {
+          this.switchEntrys(array, i, lastId);
+          this.sortFinishesAfterDarts(array);
+        }/*
+        if (array[i].DartsToFinish === array[0].DartsToFinish || i < 50) {
+          if (last && (array[i].Tribles + array[i].Bulls) < (last.Tribles + last.Bulls) && array[i].Singles === last.Singles && array[i].DartsToFinish === last.DartsToFinish) {
+            this.switchEntrys(array, i, lastId);
+            this.sortFinishes(array);
+          } else if (last && (array[i].Tribles + array[i].Bulls) === (last.Tribles + last.Bulls) && array[i].Singles === last.Singles && array[i].DartsToFinish === last.DartsToFinish) {
+            if (array[i].Bulls < last.Bulls) {
+              this.switchEntrys(array, i, lastId);
+              this.sortFinishes(array);
+            }
+          }
+        }*/
+        last = array[i];
+        lastId = i;
+      }
+    } catch (error) {
+      console.log("Vorsortierungs Fehler")
+    }
+  }
+
+  sortFinishesAfterSingles(array) {
     var last;
     var lastId;
     for (var i = 0; i < array.length; i++) {
-      if (array[i].DartsToFinish <= finish && last) {
-        var actuallIndex = this.priorityArray.indexOf(array[i].Darts[array[i].DartsToFinish - 1]);
-        var lastIndex = this.priorityArray.indexOf(last.Darts[last.DartsToFinish - 1]);
-        if (actuallIndex < lastIndex && actuallIndex !== -1 || lastIndex === -1 && actuallIndex !== -1) {
-          this.switchEntrys(array, i, lastId);
-          this.priority(array);
-        }
-      } else {
-        if (last && last.DartsToFinish === array[i].DartsToFinish) {
-          var actuallIndex2 = this.priorityArray.indexOf(array[i].Darts[array[i].DartsToFinish - 1]);
-          var lastIndex2 = this.priorityArray.indexOf(last.Darts[last.DartsToFinish - 1]);
-          if (actuallIndex2 < lastIndex2 && actuallIndex2 !== -1 || lastIndex2 === -1 && actuallIndex2 !== -1) {
-            this.switchEntrys(array, i, lastId);
-          }
-        }
+      if (last && array[i].DartsToFinish > last.DartsToFinish) {
+        return i;
+      } else if (last && array[i].Singles > last.Singles && array[i].Bulls <= last.Bulls && array[i].DartsToFinish === last.DartsToFinish) {
+        this.switchEntrys(array, i, lastId);
+        this.sortFinishesAfterSingles(array);
       }
       last = array[i];
       lastId = i;
     }
+  }
+
+  priority(array) {
+    var finish = array[0].DartsToFinish;
+    var last;
+    var lastId;
+    try {
+      if (this.settings.getAccountByName(this.game.getAcctualPlayer().getName())) {
+        var priorityArray = this.settings.getAccountByName(this.game.getAcctualPlayer().getName()).getDoubles();
+      } else {
+        priorityArray = this.settings.getDefaultPriority();
+      }
+
+      for (var i = 0; i < array.length; i++) {
+        if (array[i].DartsToFinish <= finish && last) {
+          var actuallIndex = priorityArray.indexOf(array[i].Darts[array[i].DartsToFinish - 1]);
+          var lastIndex = priorityArray.indexOf(last.Darts[last.DartsToFinish - 1]);
+          if (actuallIndex < lastIndex && actuallIndex !== -1 || lastIndex === -1 && actuallIndex !== -1) {
+            if (array[i].Singles <= last.Singles && array[i].Doubles <= last.Doubles) {
+              this.switchEntrys(array, i, lastId);
+              this.priority(array);
+            }
+          }
+        } else {
+          if (last && last.DartsToFinish === array[i].DartsToFinish) {
+            var actuallIndex2 = priorityArray.indexOf(array[i].Darts[array[i].DartsToFinish - 1]);
+            var lastIndex2 = priorityArray.indexOf(last.Darts[last.DartsToFinish - 1]);
+            if (actuallIndex2 < lastIndex2 && actuallIndex2 !== -1 || lastIndex2 === -1 && actuallIndex2 !== -1) {
+              if (array[i].Singles <= last.Singles && array[i].Doubles <= last.Doubles) {
+                this.switchEntrys(array, i, lastId);
+              }
+            }
+          }
+        }
+        last = array[i];
+        lastId = i;
+      }
+    } catch (error) {
+      console.log("Finsih weg nicht berechenbar")
+    }
+
   }
 
   switchEntrys(data, switch1, switch2) {
@@ -273,8 +363,7 @@ export class GamePage {
   }
 
   addToOutput(dart1, dart2, dart3) {
-
-    var data = { Darts: [dart1, dart2, dart3], DartsToFinish: 0, Sort: 1 };
+    var data = { Darts: [dart1, dart2, dart3], DartsToFinish: 0, Tribles: 0, Doubles: 0, Bulls: 0, Singles: 0 };
     if (!dart2) {
       data.Darts.splice(2, 1);
       data.Darts.splice(1, 1);
@@ -285,16 +374,30 @@ export class GamePage {
     } else {
       data.DartsToFinish = 3;
     }
-
     if (this.check(data) == false) {
       return;
     }
 
+
     for (var h = 0; h < data.Darts.length; h++) {
       if (h + 1 === data.DartsToFinish) {
         data.Darts[h] = this.textEdit(data.Darts[h], true);
+        if (data.Darts[h].search("BULL") !== -1) {
+          data.Bulls++;
+        } else if (data.Darts[h].search("D") !== -1) {
+          data.Doubles++;
+        }
       } else {
         data.Darts[h] = this.textEdit(data.Darts[h], false);
+        if (data.Darts[h].search("T") !== -1) {
+          data.Tribles++;
+        } else if (data.Darts[h].search("BULL") !== -1) {
+          data.Bulls++;
+        } else if (data.Darts[h].search("D") !== -1) {
+          data.Doubles++;
+        } else {
+          data.Singles++;
+        }
       }
     }
 
@@ -310,95 +413,48 @@ export class GamePage {
       }
       found = 0;
     }
-
     this.output.push(data);
   }
 
-  addThrowDarts(points) {
-    this.players[this.acctualPlayer].dartsThrown.push({
-      leg: this.acctualLeg,
-      set: this.acctualSet,
-      points: points
-    });
-  }
-
-  nextLeg() {
-    for (var i = 0; i < this.getPlayer().length; i++) {
-      this.getPlayer()[i].points = this.points
+  legWon(points: number, darts: number) {
+    this.game.getAcctualPlayer().scorePoints(points);
+    this.game.getAcctualPlayer().addCheckout(points);
+    this.game.addThownDartsForPlayer(points, darts);
+    this.game.legWon();
+    if (this.game.checkGameWin() === true) {
+      this.stats.saveGame();
+      this.router.navigate(['/game-stats', { Id: this.game.Id }]);
+      return;
     }
-    this.acctualLeg++;
-    this.calculateFinishWay(this.points);
-    this.nextPlayer();
-  }
-
-  legWon(points) {
-    this.players[this.acctualPlayer].points = 0;
-    this.addThrowDarts(points);
-    this.setAvarages();
-    this.players[this.acctualPlayer].legsWon++;
-    this.checkSetWin();
-  }
-
-  checkSetWin() {
-    if (this.players[this.acctualPlayer].legsWon === this.legsToWin) {
-      this.players[this.acctualPlayer].setsWon++;
-      this.acctualSet++;
-      for (var i = 0; i < this.players.length; i++) {
-        this.players[i].legsWon = 0;
-      }
-      this.checkGameWin();
+    this.game.nextLeg();
+    for (var i = 0; i < this.game.players.length; i++) {
+      this.calculateFinishWay(i, this.game.players[i].getPoints());
     }
-  }
-
-  checkGameWin() {
-    if (this.players[this.acctualPlayer].setsWon === this.setsToWin) {
-      this.showWinDialog();
+    if (this.desktop === false) {
+      this.slides.slideTo(this.game.acctualPlayer, 1000);
     }
-  }
-
-  async showWinDialog() {
-    var game = this;
-    const alert = await this.alertCtrl.create({
-      header: 'Game gewonnen',
-      message: 'Herzlichen Glückwunsch du hast gewonnen /n mit einem Avarage von '+this.players[this.acctualPlayer].avarageTotal,
-      buttons: [{
-        text: 'Okay',
-        handler: () => {
-          this.router.navigateByUrl('/start');
-        }
-      },{
-        text: 'Statistiken anzeigen',
-        handler: () => {
-          this.router.navigateByUrl('/start');
-        }
-      }]
-    });
-    await alert.present();
   }
 
   score(points) {
     if (points <= 180) {
-      if (this.players[this.acctualPlayer].points >= points && (this.players[this.acctualPlayer].points-points >=2
-          || this.players[this.acctualPlayer].points === points)) {
-        if (this.players[this.acctualPlayer].points === points) {
-          if (this.players[this.acctualPlayer].finishTable.length > 0) {
+      if (this.game.getAcctualPlayer().checkPoints(points) === true) {
+        if (this.game.getAcctualPlayer().getPoints() === points) {
+          if (this.game.getAcctualPlayer().isFinishPosible() === true) {
             this.presentAlert(points, this);
           } else {
             this.presentToast("Mit 3 Darts nicht möglich")
-          } 
+          }
         } else {
-          this.players[this.acctualPlayer].points = this.players[this.acctualPlayer].points - points;
-          this.addThrowDarts(points);
-          this.setAvarages();
-          this.calculateFinishWay(this.players[this.acctualPlayer].points);
-          this.nextPlayer();
+          this.game.getAcctualPlayer().scorePoints(points);
+          this.game.addThownDartsForPlayer(points, 3);
+          this.calculateFinishWay(this.game.acctualPlayer, this.game.getAcctualPlayer().getPoints());
+          this.game.nextPlayer();
         }
       } else {
         //überworfen
         this.presentToast("Überworfen")
-        this.addThrowDarts(0);
-        this.setAvarages();
-        this.nextPlayer();
+        this.game.addThownDartsForPlayer(0, 3);
+        this.game.nextPlayer();
       }
     } else {
       this.presentToast("Cheaten geht nit")
@@ -414,81 +470,58 @@ export class GamePage {
   }
 
   async presentAlert(points, that) {
-    const alert = await this.alertCtrl.create({
-      message: '<strong>Doppel geworfen?</strong>',
-      buttons: [
-        {
-          text: 'Nein',
-          role: 'cancel',
-          cssClass: 'secondary',
-          handler: () => {
-            console.log('Confirm Cancel: blah');
-          }
-        }, {
-          text: 'Ja',
-          handler: () => {
-            that.legWon(points);
-            that.nextLeg();
-          }
+    var buttons = this.getButtonsForLegWin(points);
+    if (buttons.length === 0) {
+      this.legWon(points, 3);
+      return;
+    }
+    this.finishDialogOpen = true;
+    this.finishDialog = await this.actionSheetController.create({
+      header: 'Benötigte Darts',
+      cssClass: 'buttonCss',
+      buttons: that.getButtonsForLegWin(points)
+    });
+    await this.finishDialog.present();
+  }
+  getButtonsForLegWin(points) {
+    var minDarts = this.game.getAcctualPlayer().finishTable[0].DartsToFinish;
+    var buttons = [];
+
+    if (minDarts === 1) {
+      var Button1 = {
+        text: '1',
+        handler: (event) => {
+          this.finishDialogOpen = false;
+          this.legWon(points, 1);
         }
-      ]
-    });
-    await alert.present();
-  }
-
-  nextPlayer() {
-    this.acctualPlayer++;
-    if (this.getPlayer().length === this.acctualPlayer) {
-      this.acctualPlayer = 0;
-    }
-    this.showData();
-  }
-
-  setAvarages() {
-    var setPoints = 0;
-    var legPoints = 0;
-    var totalPoints = 0;
-    var setCounter = 0, legCounter = 0, totalCounter = 0;
-    for (var i = 0; i < this.players[this.acctualPlayer].dartsThrown.length; i++) {
-      totalPoints = totalPoints + this.players[this.acctualPlayer].dartsThrown[i].points;
-      totalCounter++;
-      if (this.acctualSet === this.players[this.acctualPlayer].dartsThrown[i].set) {
-        setPoints = setPoints + this.players[this.acctualPlayer].dartsThrown[i].points;
-        setCounter++;
       }
-      if (this.acctualLeg === this.players[this.acctualPlayer].dartsThrown[i].leg) {
-        legPoints = legPoints + this.players[this.acctualPlayer].dartsThrown[i].points;
-        legCounter++
-      }
-      this.players[this.acctualPlayer].avarageTotal = (Math.round(totalPoints / totalCounter * 100) / 100);
-      this.players[this.acctualPlayer].avarageLeg = (Math.round(legPoints / legCounter * 100) / 100);
-      this.players[this.acctualPlayer].avarageSet = (Math.round(setPoints / setCounter * 100) / 100);
+      buttons.push(Button1);
     }
-
+    if (minDarts < 3) {
+      var Button2 = {
+        text: '2',
+        handler: (event) => {
+          this.finishDialogOpen = false;
+          this.legWon(points, 2);
+        }
+      }
+      buttons.push(Button2);
+    }
+    if (minDarts === 3) {
+      return [];
+    }
+    var Button3 = {
+      text: '3',
+      cssClass: 'secondary',
+      handler: (event) => {
+        this.finishDialogOpen = false;
+        this.legWon(points, 3);
+      }
+    }
+    buttons.push(Button3);
+    return buttons;
   }
-
-  showData = function () {
-    this.actuallPlayerM = this.getPlayer()[this.acctualPlayer].name;
-    this.actuallPointsM = this.getPlayer()[this.acctualPlayer].points.toString();
-    this.avarageM = this.getPlayer()[this.acctualPlayer].avarageLeg.toString();
-    this.sets_wonM = this.getPlayer()[this.acctualPlayer].setsWon.toString();
-    this.legs_wonM = this.getPlayer()[this.acctualPlayer].legsWon.toString();
-  }
-
-  startGame() {
-    (window as any).powerManagement.acquire(function() {
-      console.log('Wakelock acquired');
-    }, function() {
-      console.log('Failed to acquire wakelock');
-    });
-    this.acctualLeg++;
-    this.acctualSet++;
-    this.acctualPlayer = 0;
-    this.showData();
-  }
-
   getElement(id: string) {
     return document.getElementById(id);
   }
-
 }

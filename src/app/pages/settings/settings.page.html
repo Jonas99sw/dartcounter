@@ -1,6 +1,6 @@
 <ion-header>
   <ion-toolbar>
-    <ion-buttons left>
+    <ion-buttons slot="start">
       <ion-button (click)="closePage()">
         <ion-icon class="customIcon" name="arrow-back"></ion-icon>
       </ion-button>
@@ -11,10 +11,15 @@
 
 <ion-content>
   <ion-list id="list">
-    <ion-list-header>Spieler</ion-list-header>
-    <ion-item *ngFor="let player of players">
-      <ion-input required="true" type="text" value={{player.name}}></ion-input>
+    <ion-list-header>
+      <ion-title color="success">Spieler</ion-title>
+    </ion-list-header>
+    <ion-item *ngFor="let player of settings.players">
+      <ion-input required="true" type="text" value={{player.Name}}></ion-input>
       <div class="buttons" item-right>
+        <ion-button color="secondary" (click)="changeDoubles(player)">
+          <ion-icon name="locate"></ion-icon>
+        </ion-button>
         <ion-button color="danger" (click)="remove(player)">
           <ion-icon name="trash"></ion-icon>
         </ion-button>
@@ -22,9 +27,22 @@
     </ion-item>
   </ion-list>
 
-  <br>
-  <br>
-
-  <ion-input #input placeholder="Name des Spielers" required="true" type="text" [(ngModel)]="playername"></ion-input>
-  <ion-button (click)="safe()" color="success">Spieler hinzufügen</ion-button>
+  <ion-list id="finishWays">
+    <ion-list-header>
+      <ion-title color="success">{{settings.doubleTitle}}</ion-title>
+    </ion-list-header>
+    <ion-reorder-group id="reorder" (ionItemReorder)="onItemReorder($event)" [disabled]="false">
+      <ion-item *ngFor="let double of settings.currentPlayer.Doubles">
+        <ion-label>{{double}}</ion-label>
+        <ion-reorder></ion-reorder>
+      </ion-item>
+    </ion-reorder-group>
+  </ion-list>
 </ion-content>
+
+<ion-footer>
+  <ion-toolbar>
+    <ion-input #input placeholder="Name des Spielers" expand="full" required="true" type="text" [(ngModel)]="playername"></ion-input>
+    <ion-button expand="full" (click)="safe()" color="success">Spieler hinzufügen</ion-button>
+  </ion-toolbar>
+</ion-footer>
