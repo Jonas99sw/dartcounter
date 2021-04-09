@@ -1,0 +1,31 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button (click)="closePage()">
+        <ion-icon name="arrow-back"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Stats</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <!--<ion-button (click)="deleteAllGames()">Alle Spiele löschen</ion-button>-->
+  <ion-card class="card" color="light">
+    <ion-card-header>
+      <ion-card-title>Avarage</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <canvas #lineChart></canvas>
+    </ion-card-content>
+  </ion-card>
+
+  <ion-card class="card" color="light">
+      <ion-card-header>
+        <ion-card-title>Checkout %</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <canvas #lineChart2></canvas>
+      </ion-card-content>
+    </ion-card>
+</ion-content>

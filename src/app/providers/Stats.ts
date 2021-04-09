@@ -5,14 +5,16 @@ import { Storage } from '@ionic/storage';
     providedIn: 'root'
 })
 export class Stats {
-    public Games: Array<Game>;
+    public Games: object;
     constructor(public storage: Storage) {
-        this.Games = [];
+        this.Games = {};
     }
     async addGame(points: number, legsToWin: number, setsToWin: number) {
         return await this.getGamesFromStorage().then((result) => {
-            this.Games.push(new Game(this.Games.length, points, legsToWin, setsToWin));
-            return this.Games[this.Games.length - 1];
+            var game = new Game(this.getNextId(), points, legsToWin, setsToWin)
+            this.Games[game.Id] = game;
+            this.saveGame();
+            return this.Games[game.Id];
         })
     }
     getGame(gameId: number): Game {
@@ -20,28 +22,51 @@ export class Stats {
             return this.Games[gameId];
         }
     }
+    delteGame(gameId: number): object {
+        delete this.Games[gameId];
+        this.saveGame();
+        return this.Games;
+    }
     saveGame() {
         this.storage.set('games', this.Games);
     }
-    async getGameFromStorage(id: number) {
-        return await this.storage.get('games').then((val) => {
-            if (val[id]) {
-                var g = new Game(val[id].Id, val[id].gamePoints, val[id].legsToWin, val[id].setsToWin);
-                g.setData(val[id]);
-                return g;
-            }
-        });
-    }
     async getGamesFromStorage() {
+        if (this.getGamesLength() > 0) {
+            return this.Games;
+        }
         return await this.storage.get('games').then((val) => {
             if (val) {
-                for (var i = 0; i < val.length; i++) {
+                for (var i in val) {
                     var g = new Game(val[i].Id, val[i].gamePoints, val[i].legsToWin, val[i].setsToWin);
                     g.setData(val[i]);
-                    this.Games.push(g);
+                    this.Games[g.Id] = g;
                 }
             }
             return this.Games;
         });
+    }
+
+    getNextId(): number {
+        var c = 0;
+        for(var key in this.Games) {
+            if (this.Games[key].Id > c) {
+                c = this.Games[key].Id;
+            }
+        }
+        c++;
+        return c;
+    }
+
+    getGamesLength(): number {
+        var c = 0;
+        for(var key in this.Games) {
+            c++;
+        }
+        return c;
+    }
+
+    deleteAllGames() {
+        this.Games = {};
+        this.storage.set('games', {});
     }
 }

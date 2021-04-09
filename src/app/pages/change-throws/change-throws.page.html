@@ -13,8 +13,7 @@
   <ion-list id="list">
     <ion-list-header>Geworfene Punkte</ion-list-header>
     <ion-item *ngFor="let throw of throwsShow">
-      <ion-input placeholder="Punktzahl" (ionChange)="change(throw)" required="true" type="number" max="180" min="0"
-        value={{throw.points}}></ion-input>
+      <ion-text>{{throw.points}}></ion-text>
     </ion-item>
   </ion-list>
 </ion-content>

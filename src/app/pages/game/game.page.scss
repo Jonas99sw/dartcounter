@@ -1,29 +1,18 @@
-.playerInfo {
-    height: 80%;
-}
-
 .block {
     height: 25%;
     width: 100%;
     display: flex;
 	justify-content: center;
 }
-
 .slide {
     width: 100%;
     max-width: 960px;
     display: block;
 }
-
 .activPlayer {
     background-color: blue;
     opacity: 45;
 }
-
-.numpad {
-    height: 50%;
-}
-
 .numberButton {
     margin: 0px;
     display: block;
@@ -33,36 +22,75 @@
     font-size: 150%;
     text-align: center;
 }
-
-#thrownpoints {
-    text-align: center;
-    font-size: 30px;
-    padding: 5px;
-    background-color: rgb(165, 165, 165);
-    height: 20%;
-}
-.points {
-    font-size: 4.5em;
-    margin: 0;
-}
-
-#finishway {
-    font-size: 25px;
-    background-color: #10dc60;
-}
-
 .marg {
     margin-bottom: 2%;
 }
-
 .vertikal {
     display: table-cell;
     vertical-align: middle;
 }
-
 #tablediv {
     display: table;
     width: 100%;
     height: 100%;
     text-align: center;
 }
+//phone
+@media screen and (max-width: 500px) {
+    .numpad {
+        height: 50% !important;
+    }
+    .playerInfo {
+        height: 80%;
+    }
+    #thrownpoints {
+        text-align: center;
+        font-size: 50px;
+        padding: 5px;
+        background-color: rgb(165, 165, 165);
+        height: 20%;
+    }
+    .points {
+        font-size: 27vw;
+        margin: 0;
+    }
+    #finishway {
+        font-size: 25px;
+        background-color: #10dc60;
+    }
+    .statstext {
+        font-size: 25px;
+    }
+}
+//desktop
+@media screen and (min-width: 500px) {
+.numpad {
+    height: 30%;
+}
+.playerInfo {
+    height: 85%;
+}
+#thrownpoints {
+    text-align: center;
+    font-size: 3vw;
+    padding: 5px;
+    background-color: rgb(165, 165, 165);
+    height: 15%;
+}
+.points {
+    font-size: 13vw;
+    margin: 0;
+}
+.player {
+    font-size: 3vw;
+}
+#finishway {
+    font-size: 2vw;
+    background-color: #10dc60;
+}
+.statstext {
+    margin-top: 10px;
+    font-size: 2vw;
+}
+}
+

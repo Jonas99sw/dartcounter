@@ -1,11 +1,11 @@
 <ion-content>
   <ion-slides (ionSlideTap)="slideTap()" pager="false" class="playerInfo">
     <ion-slide *ngFor="let player of game.players" class="slide" [style.background-color]="getColor(player.name)">
-      <h2>{{player.name}}</h2>
+      <h2 class="player">{{player.name}}</h2>
       <h1 class="points">{{player.points}}</h1>
       <div id="finishway">{{player.finishWay}}</div>
-      <div id="avarage">Avarage: {{player.avarageTotal}}</div>
-      <div class="block marg" [style.background-color]="getColor(player.name)">
+      <div class="statstext" id="avarage">Avarage: {{player.avarageTotal}}</div>
+      <div class="block marg statstext">
         <div id="legs_won">Legs: {{player.legsWon}}/{{game.legsToWin}}</div>
         <div id="sets_won">&#160; Sets: {{player.setsWon}}/{{game.setsToWin}}</div>
       </div>

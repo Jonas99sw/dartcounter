@@ -8,6 +8,7 @@ import { ToastController } from '@ionic/angular';
 })
 export class Settings {
     players: Array<any>
+    colors: Array<string>
     currentPlayer: any
     doubleTitle: string
     constructor(public storage: Storage, private toastController: ToastController) {
@@ -17,8 +18,31 @@ export class Settings {
             Doubles: []
         };
         this.doubleTitle = "";
+        this.setColors()
     }
-    async getPlayers(){
+    setColors() {
+        this.colors = [
+            'rgb(252, 3, 36)',
+            'rgb(36, 252, 3)',
+            'rgb(252, 140, 3)',
+            'rgb(3, 40, 252)',
+            'rgb(3, 235, 252)',
+            'rgb(252, 211, 3)',
+            'rgb(3, 40, 252)'
+        ]
+    }
+    getAspectRadio(): number {
+        if (this.isDesktop() === true) {
+            return 3;
+        } 
+        return 2;
+    }
+    isDesktop(): boolean {
+        var isTouchDevice = function () { return 'ontouchstart' in window || 'onmsgesturechange' in window; };
+        var desktop = window.screenX != 0 && !isTouchDevice() ? true : false;
+        return desktop;
+    }
+    async getPlayers() {
         if (this.players.length > 0) {
             return this.players; //already read Players from storage
         }

@@ -23,4 +23,8 @@ export class StartPage {
   tournament() {
     this.router.navigate(['/config-game']); 
   }
+
+  stats() {
+    this.router.navigate(['/app/tabs/stats']); 
+  }
 }

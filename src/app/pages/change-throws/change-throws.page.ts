@@ -30,7 +30,7 @@ export class ChangeThrowsPage {
     }
   }
 
-  change(wurf) {
+  /*change(wurf) {
     var value = (event as any).target.value;
     if (value<=180 && value >= 0) {
       if (value != "") {
@@ -43,7 +43,7 @@ export class ChangeThrowsPage {
       this.presentToast("Ungültiger Wert")
     }
 
-  }
+  }*/
 
   async presentToast(message: string) {
     const toast = await this.toastController.create({
@@ -54,7 +54,7 @@ export class ChangeThrowsPage {
   }
 
   closepage() {
-    var thrownpoints = this.totalpoints + this.newtotalpoint;
+    /*var thrownpoints = this.totalpoints + this.newtotalpoint;
     if (thrownpoints > 501 || thrownpoints <= 1){
       this.presentToast("Nicht möglich");
       return;
@@ -63,8 +63,8 @@ export class ChangeThrowsPage {
       points: thrownpoints,
       me: this.that,
       throws: this.throws
-    }
-    this.modalController.dismiss(data);
+    }*/
+    this.modalController.dismiss();
   }
 
 }

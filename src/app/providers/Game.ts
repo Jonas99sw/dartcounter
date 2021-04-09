@@ -15,6 +15,7 @@ export class Game {
     playerStartedSet: number;
     playerStartedGame: number;
     gamePoints: number; //501
+    playerWon: number;
     date: Date;
     constructor(Id: number, gamePoints: number, legsToWin: number, setsToWin: number) {
         this.Id = Id;
@@ -41,11 +42,28 @@ export class Game {
         this.acctualPlayer = data.acctualPlayer;
         this.isFinished = data.isFinished;
         this.date = data.date;
+        if (data.playerWon) {
+            this.playerWon = data.playerWon;
+        }
         for (var i=0; i < data.players.length; i++) {
             var p = new Player(data.players[i].name, data.players[i].points);
             p.setData(data.players[i]);
             this.players.push(p);
+            if (this.setsToWin === 1 && p.legsWon === this.legsToWin) {
+                this.playerWon = i;
+            } else if(this.setsToWin === p.setsWon) {
+                this.playerWon = i;
+            } else if(i+1 === data.players.length && this.playerWon !== 0 && this.playerWon !== 1) {
+                var notFinished = true;
+            }
         }
+    }
+    getNames() {
+        var names = [];
+        for (var i=0;i<this.players.length;i++) {
+           names.push(this.players[i].getName());
+        }
+        return names;
     }
     getPlayedSetsLength() {
         var c = 0;
@@ -97,6 +115,7 @@ export class Game {
     checkGameWin(): boolean {
         if (this.getAcctualPlayer().setsWon === this.setsToWin) {
             this.isFinished = true;
+            this.playerWon = this.acctualPlayer;
             return true;
         }
         return false;
@@ -128,5 +147,21 @@ export class Game {
             this.nextPlayerForLeg()
         }
         ;
+    }
+    removeLastThrow() {
+        this.getLastPlayer().removeLastThrow(this.acctualSet, this.acctualLeg);
+        this.acctualPlayer = this.getLastPlayerId();
+    }
+    getLastPlayer() {
+        return this.players[this.getLastPlayerId()];
+    }
+    getLastPlayerId() {
+        var playerId;
+        if (this.acctualPlayer > 0) {
+            playerId = this.acctualPlayer - 1;
+        } else {
+            playerId = this.players.length - 1;
+        }
+        return playerId;
     }
 }

@@ -1,0 +1,29 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button (click)="closePage()">
+        <ion-icon name="arrow-back"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Games</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-card *ngFor="let game of gamesList" (click)="pressCard(game)">
+    <ion-card-header>
+      <div class="box headerdata">
+        <ion-card-subtitle color="medium">{{game.date}}</ion-card-subtitle>
+        <ion-card-title>{{game.playerText}}</ion-card-title>
+      </div>
+      <div class="box deleteicon">
+        <ion-button fill="clear" size="small" (click)="deleteGame(game)">
+          <ion-icon color="danger" name="trash"></ion-icon>
+        </ion-button>
+      </div>
+    </ion-card-header>
+    <ion-card-content class="left">
+      <ion-text slot="start" color="dark">{{game.winText}}</ion-text>
+    </ion-card-content>
+  </ion-card>
+</ion-content>

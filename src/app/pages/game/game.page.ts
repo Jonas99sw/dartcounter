@@ -22,34 +22,38 @@ export class GamePage {
   private game: Game;
   desktop: boolean;
   finishDialogOpen: boolean;
+  removeLastThrowOpen: boolean;
   wayToStart: boolean;
   thrownpoints: any;
   finishDialog: any;
+  removeDialog: any;
   output = [];
   soFar = [];
   constructor(public navCtrl: NavController, public alertCtrl: AlertController, public router: Router,
     public toastController: ToastController, public modalCtrl: ModalController, private route: ActivatedRoute,
     public actionSheetController: ActionSheetController, private settings: Settings, private stats: Stats) {
-    this.thrownpoints = "";
-    this.wayToStart = false;
     this.route.params.subscribe(params => {
+      this.thrownpoints = "";
+      this.wayToStart = false;
       var gameId = JSON.parse(params.gameId);
       this.finishDialogOpen = false;
-      this.game = this.stats.getGame(gameId);
-      if (!this.game) {
-        this.stats.getGameFromStorage(gameId).then((game) => {
-          this.game = game;
-        })
-      }
-      settings.getPlayers();
-      for (var i = 0; i < this.game.players.length; i++) {
-        this.calculateFinishWay(i, this.game.players[i].getPoints());
-      }
-      var isTouchDevice = function () { return 'ontouchstart' in window || 'onmsgesturechange' in window; };
-      this.desktop = window.screenX != 0 && !isTouchDevice() ? true : false;
-      this.addKeyListenerEvent();
-      this.setDisplayActivity();
-
+      this.removeLastThrowOpen = false;
+      this.game = new Game(1, 0, 0, 0);
+      this.stats.getGamesFromStorage().then((games) => {
+        if (!games[gameId]) {
+          this.router.navigate(['/start']);
+          return;
+        }
+        this.game = games[gameId];
+        settings.getPlayers();
+        for (var i = 0; i < this.game.players.length; i++) {
+          this.calculateFinishWay(i, this.game.players[i].getPoints());
+        }
+        var isTouchDevice = function () { return 'ontouchstart' in window || 'onmsgesturechange' in window; };
+        this.desktop = window.screenX != 0 && !isTouchDevice() ? true : false;
+        this.addKeyListenerEvent();
+        this.setDisplayActivity();
+      })
     });
   }
   setDisplayActivity() {
@@ -69,26 +73,46 @@ export class GamePage {
   }
   addKeyListenerEvent() {
     if (this.desktop === true) {
-      document.addEventListener('keydown', function (e) {
-        var number = parseInt((e as any).key);
-        var kfzregex = new RegExp("[0-9]{1,3}");
-        if (kfzregex.test(String(number))) {
-          if (this.finishDialogOpen === true) {
-            this.finishDialogOpen = false;
-            var points = this.game.getAcctualPlayer().getPoints();
-            this.legWon(points, number);
-            this.finishDialog.dismiss();
+      document.addEventListener('keydown', this.eventListener.bind(this));
+    }
+  }
+
+  eventListener(e) {
+      var number = parseInt((e as any).key);
+      var kfzregex = new RegExp("[0-9]{1,3}");
+      if (kfzregex.test(String(number))) {
+        if (this.finishDialogOpen === true) {
+          this.finishDialogOpen = false;
+          var points = this.game.getAcctualPlayer().getPoints();
+          this.legWon(points, number);
+          this.finishDialog.dismiss();
+          return;
+        }
+        if (this.removeLastThrowOpen === true) {
+          return;
+        }
+        this.number(number);
+      }
+      if (e.key === "Enter") {
+        if (this.removeLastThrowOpen === true) {
+          this.game.removeLastThrow();
+          this.calculateFinishWay(this.game.acctualPlayer, this.game.getAcctualPlayer().getPoints());
+          this.removeLastThrowOpen = false;
+          this.removeDialog.dismiss();
+          return;
+        }
+        this.enter();
+      } else if (e.key === "Backspace") {
+        if (this.thrownpoints.length > 0) {
+          this.delete();
+        } else {
+          if (this.removeLastThrowOpen === true) {
             return;
           }
-          this.number(number);
+          this.removeLastThrowOpen = true;
+          this.removeLastThrowDialog();
         }
-        if (e.key === "Enter") {
-          this.enter();
-        } else if (e.key === "Backspace") {
-          this.delete();
-        }
-      }.bind(this));
-    }
+      }
   }
 
   number(pressed) {
@@ -96,6 +120,32 @@ export class GamePage {
     if (points <= 180) {
       this.thrownpoints = this.thrownpoints + String(pressed);
     }
+  }
+
+  async removeLastThrowDialog() {
+    this.removeDialog = await this.alertCtrl.create({
+      cssClass: 'my-custom-class',
+      header: 'Rückgängig?',
+      message: '<strong>Wollen Sie die letzte Aufnahme zurück nehmen?</strong>',
+      buttons: [
+        {
+          text: 'Abbrechen',
+          role: 'cancel',
+          cssClass: 'secondary',
+          handler: () => {
+            this.removeLastThrowOpen = false;
+          }
+        }, {
+          text: 'Ja',
+          handler: () => {
+            this.game.removeLastThrow();
+            this.calculateFinishWay(this.game.acctualPlayer, this.game.getAcctualPlayer().getPoints());
+            this.removeLastThrowOpen = false;
+          }
+        }
+      ]
+    });
+    await this.removeDialog.present();
   }
 
   showWays() {
@@ -304,7 +354,7 @@ export class GamePage {
           var actuallIndex = priorityArray.indexOf(array[i].Darts[array[i].DartsToFinish - 1]);
           var lastIndex = priorityArray.indexOf(last.Darts[last.DartsToFinish - 1]);
           if (actuallIndex < lastIndex && actuallIndex !== -1 || lastIndex === -1 && actuallIndex !== -1) {
-            if (array[i].Singles <= last.Singles && array[i].Doubles <= last.Doubles) {
+            if (array[i].Singles <= last.Singles && array[i].Doubles <= (last.Doubles + last.Bulls)) {
               this.switchEntrys(array, i, lastId);
               this.priority(array);
             }
@@ -314,7 +364,7 @@ export class GamePage {
             var actuallIndex2 = priorityArray.indexOf(array[i].Darts[array[i].DartsToFinish - 1]);
             var lastIndex2 = priorityArray.indexOf(last.Darts[last.DartsToFinish - 1]);
             if (actuallIndex2 < lastIndex2 && actuallIndex2 !== -1 || lastIndex2 === -1 && actuallIndex2 !== -1) {
-              if (array[i].Singles <= last.Singles && array[i].Doubles <= last.Doubles) {
+              if (array[i].Singles <= last.Singles && array[i].Doubles <= (last.Doubles + last.Bulls)) {
                 this.switchEntrys(array, i, lastId);
               }
             }
@@ -423,7 +473,10 @@ export class GamePage {
     this.game.legWon();
     if (this.game.checkGameWin() === true) {
       this.stats.saveGame();
-      this.router.navigate(['/game-stats', { Id: this.game.Id }]);
+      document.removeEventListener("keydown", this.eventListener, false);     // Fails
+      document.removeEventListener("keydown", this.eventListener, true);      // Succeeds
+      //this.router.navigate(['/game-stats', { Id: this.game.Id }]);
+      this.router.navigateByUrl("/game-stats/"+this.game.Id)
       return;
     }
     this.game.nextLeg();
@@ -433,6 +486,7 @@ export class GamePage {
     if (this.desktop === false) {
       this.slides.slideTo(this.game.acctualPlayer, 1000);
     }
+    this.stats.saveGame();
   }
 
   score(points) {
@@ -459,6 +513,7 @@ export class GamePage {
     } else {
       this.presentToast("Cheaten geht nit")
     }
+    this.stats.saveGame();
   }
 
   async presentToast(message: string) {

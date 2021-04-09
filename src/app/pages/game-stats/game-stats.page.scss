@@ -1,6 +1,28 @@
-ion-col > div {
-    background-color: #f7f7f7;
-    border: solid 1px #ddd;
-    padding: 10px;
-    font-size: 25px;
+.green{
+  color: green;
+}
+//phone
+@media screen and (max-width: 500px) {
+  .title{
+    font-weight: bold;
+    font-size: 4vw;
   }
+
+  .header{
+    font-size: 20px;
+    font-weight: bold;
+  }
+}
+
+//desktop
+@media screen and (min-width: 500px) {
+  .title{
+    font-weight: bold;
+      font-size: 40px;
+  }
+
+  .header{
+    font-size: 20px;
+    font-weight: bold;
+  }
+}
